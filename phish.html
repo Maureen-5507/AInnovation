@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishShield - URL Security Scanner</title>
+   <style>
+     * {
+     margin: 0;
+     padding: 0;
+     box-sizing: border-box;
+ }
+
+ body {
+     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+     background: #0a0a0a;
+     color: #e4e4e7;
+     min-height: 100vh;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     line-height: 1.6;
+     overflow-x: hidden;
+ }
+
+ .container {
+     max-width: 600px;
+     width: 100%;
+     padding: 2rem;
+     position: relative;
+ }
+
+ .glow-bg {
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     transform: translate(-50%, -50%);
+     width: 400px;
+     height: 400px;
+     background: radial-gradient(circle, rgba(255, 235, 59, 0.08) 0%, transparent 70%);
+     border-radius: 50%;
+     filter: blur(60px);
+     z-index: -1;
+ }
+
+ .header {
+     text-align: center;
+     margin-bottom: 3rem;
+ }
+
+ .title {
+     font-size: 2.5rem;
+     font-weight: 700;
+     background: linear-gradient(135deg, #ffeb3b, #ffd54f);
+     -webkit-background-clip: text;
+     -webkit-text-fill-color: transparent;
+     background-clip: text;
+     margin-bottom: 0.5rem;
+     text-shadow: 0 0 30px rgba(255, 235, 59, 0.3);
+ }
+
+ .subtitle {
+     color: #a1a1aa;
+     font-size: 1.1rem;
+     font-weight: 400;
+ }
+
+ .input-section {
+     margin-bottom: 2rem;
+ }
+
+ .input-group {
+     position: relative;
+     margin-bottom: 1.5rem;
+ }
+
+ .input-label {
+     display: block;
+     margin-bottom: 0.5rem;
+     font-weight: 500;
+     color: #d4d4d8;
+     font-size: 0.9rem;
+ }
+
+ .url-input {
+     width: 100%;
+     padding: 1rem 1.25rem;
+     background: rgba(24, 24, 27, 0.8);
+     border: 1px solid rgba(63, 63, 70, 0.6);
+     border-radius: 12px;
+     color: #e4e4e7;
+     font-size: 1rem;
+     font-family: 'JetBrains Mono', monospace;
+     transition: all 0.3s ease;
+     backdrop-filter: blur(10px);
+ }
+
+ .url-input:focus {
+     outline: none;
+     border-color: #ffeb3b;
+     box-shadow: 0 0 0 3px rgba(255, 235, 59, 0.1), 0 0 20px rgba(255, 235, 59, 0.2);
+ }
+
+ .url-input::placeholder {
+     color: #71717a;
+ }
+
+ .check-btn {
+     width: 100%;
+     padding: 1rem 2rem;
+     background: linear-gradient(135deg, #ffeb3b, #ffc107);
+     border: none;
+     border-radius: 12px;
+     color: #000;
+     font-size: 1rem;
+     font-weight: 600;
+     cursor: pointer;
+     transition: all 0.3s ease;
+     position: relative;
+     overflow: hidden;
+ }
+
+ .check-btn:hover {
+     transform: translateY(-2px);
+     box-shadow: 0 8px 25px rgba(255, 235, 59, 0.3);
+ }
+
+ .check-btn:active {
+     transform: translateY(0);
+ }
+
+ .check-btn:disabled {
+     opacity: 0.6;
+     cursor: not-allowed;
+     transform: none;
+ }
+
+ .loading-spinner {
+     display: inline-block;
+     width: 20px;
+     height: 20px;
+     border: 2px solid rgba(0, 0, 0, 0.3);
+     border-radius: 50%;
+     border-top-color: #000;
+     animation: spin 1s linear infinite;
+     margin-right: 8px;
+ }
+
+ @keyframes spin {
+     to {
+         transform: rotate(360deg);
+     }
+ }
+
+ .results-area {
+     margin-top: 2rem;
+     opacity: 0;
+     transform: translateY(20px);
+     transition: all 0.4s ease;
+ }
+
+ .results-area.visible {
+     opacity: 1;
+     transform: translateY(0);
+ }
+
+ .result-card {
+     background: rgba(24, 24, 27, 0.6);
+     border: 1px solid rgba(63, 63, 70, 0.4);
+     border-radius: 16px;
+     padding: 2rem;
+     backdrop-filter: blur(20px);
+     position: relative;
+     overflow: hidden;
+ }
+
+ .result-card::before {
+     content: '';
+     position: absolute;
+     top: 0;
+     left: 0;
+     right: 0;
+     height: 3px;
+     background: linear-gradient(90deg, transparent, #ffeb3b, transparent);
+     opacity: 0.6;
+ }
+
+ .score-section {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     margin-bottom: 1.5rem;
+     flex-wrap: wrap;
+     gap: 1rem;
+ }
+
+ .score-display {
+     font-size: 3rem;
+     font-weight: 700;
+     font-family: 'JetBrains Mono', monospace;
+     text-shadow: 0 0 20px currentColor;
+ }
+
+ .score-safe {
+     color: #22c55e;
+ }
+
+ .score-warning {
+     color: #f59e0b;
+ }
+
+ .score-danger {
+     color: #ef4444;
+ }
+
+ .risk-label {
+     font-size: 1.25rem;
+     font-weight: 600;
+     text-transform: uppercase;
+     letter-spacing: 0.5px;
+ }
+
+ .reasons-section {
+     margin-top: 1.5rem;
+ }
+
+ .reasons-title {
+     font-size: 1.1rem;
+     font-weight: 600;
+     margin-bottom: 1rem;
+     color: #ffeb3b;
+ }
+
+ .reason-item {
+     background: rgba(39, 39, 42, 0.5);
+     border: 1px solid rgba(63, 63, 70, 0.3);
+     border-radius: 8px;
+     padding: 0.75rem 1rem;
+     margin-bottom: 0.5rem;
+     font-size: 0.9rem;
+     color: #d4d4d8;
+ }
+
+ .error-message {
+     background: rgba(239, 68, 68, 0.1);
+     border: 1px solid rgba(239, 68, 68, 0.3);
+     border-radius: 12px;
+     padding: 1rem;
+     color: #fca5a5;
+     text-align: center;
+     margin-top: 1rem;
+ }
+
+ @media (max-width: 640px) {
+     .container {
+         padding: 1rem;
+     }
+
+     .title {
+         font-size: 2rem;
+     }
+
+     .score-section {
+         flex-direction: column;
+         text-align: center;
+     }
+ }
+
+ .fade-in {
+     animation: fadeIn 0.6s ease-out;
+ }
+
+ @keyframes fadeIn {
+     from {
+         opacity: 0;
+         transform: translateY(30px);
+     }
+
+     to {
+         opacity: 1;
+         transform: translateY(0);
+     }
+ }
+   </style>
+   <script>
+    // script.js
+// PhishShield - URL Analysis Application
+        class PhishShield {
+            constructor() {
+                this.apiUrl = 'http://localhost:5000/predict';
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.urlInput = document.getElementById('urlInput');
+                this.checkBtn = document.getElementById('checkBtn');
+                this.btnText = document.getElementById('btnText');
+                this.resultsArea = document.getElementById('resultsArea');
+                this.scoreValue = document.getElementById('scoreValue');
+                this.riskLabel = document.getElementById('riskLabel');
+                this.reasonsSection = document.getElementById('reasonsSection');
+                this.reasonsList = document.getElementById('reasonsList');
+                this.errorMessage = document.getElementById('errorMessage');
+            }
+
+            bindEvents() {
+                this.checkBtn.addEventListener('click', () => this.analyzeUrl());
+                this.urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.analyzeUrl();
+                    }
+                });
+                this.urlInput.addEventListener('input', () => this.hideError());
+            }
+
+            async analyzeUrl() {
+                const url = this.urlInput.value.trim();
+
+                if (!url) {
+                    this.showError('Please enter a URL to analyze');
+                    return;
+                }
+
+                if (!this.isValidUrl(url)) {
+                    this.showError('Please enter a valid URL (e.g., https://example.com)');
+                    return;
+                }
+
+                this.setLoadingState(true);
+                this.hideError();
+
+                try {
+                    const response = await fetch(this.apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ url: url })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.displayResults(data);
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    this.showError('Unable to analyze URL. Please check your connection and try again.');
+                } finally {
+                    this.setLoadingState(false);
+                }
+            }
+
+            displayResults(data) {
+                const score = Math.round(data.score || 0);
+                const label = data.label || 'Unknown';
+                const reasons = data.reasons || [];
+
+                // Update score display
+                this.scoreValue.textContent = score;
+                this.riskLabel.textContent = label;
+
+                // Apply color coding based on score
+                this.scoreValue.className = 'score-display';
+                if (score <= 40) {
+                    this.scoreValue.classList.add('score-safe');
+                } else if (score <= 70) {
+                    this.scoreValue.classList.add('score-warning');
+                } else {
+                    this.scoreValue.classList.add('score-danger');
+                }
+
+                // Display reasons
+                if (reasons.length > 0) {
+                    this.reasonsList.innerHTML = reasons
+                        .map(reason => `<div class="reason-item">${this.escapeHtml(reason)}</div>`)
+                        .join('');
+                    this.reasonsSection.style.display = 'block';
+                } else {
+                    this.reasonsSection.style.display = 'none';
+                }
+
+                // Show results with animation
+                this.resultsArea.classList.add('visible');
+                this.resultsArea.classList.add('fade-in');
+
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    this.resultsArea.classList.remove('fade-in');
+                }, 600);
+            }
+
+            setLoadingState(loading) {
+                if (loading) {
+                    this.checkBtn.disabled = true;
+                    this.btnText.innerHTML = '<span class="loading-spinner"></span>Analyzing...';
+                } else {
+                    this.checkBtn.disabled = false;
+                    this.btnText.textContent = 'Analyze URL';
+                }
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                this.errorMessage.classList.add('fade-in');
+
+                setTimeout(() => {
+                    this.errorMessage.classList.remove('fade-in');
+                }, 600);
+            }
+
+            hideError() {
+                this.errorMessage.style.display = 'none';
+            }
+
+            isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, (m) => map[m]);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new PhishShield();
+        });
+   </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="glow-bg"></div>
+
+        <div class="header">
+            <h1 class="title">PhishShield</h1>
+            <p class="subtitle">Advanced URL Security Scanner</p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="urlInput" class="input-label">Enter URL to analyze</label>
+                <input type="url" id="urlInput" class="url-input" placeholder="https://example.com" autocomplete="url">
+            </div>
+            <button id="checkBtn" class="check-btn">
+                <span id="btnText">Analyze URL</span>
+            </button>
+        </div>
+
+        <div id="resultsArea" class="results-area">
+            <div class="result-card">
+                <div class="score-section">
+                    <div>
+                        <div id="scoreValue" class="score-display">--</div>
+                    </div>
+                    <div>
+                        <div id="riskLabel" class="risk-label">Enter URL</div>
+                    </div>
+                </div>
+
+                <div id="reasonsSection" class="reasons-section" style="display: none;">
+                    <h3 class="reasons-title">Detection Details</h3>
+                    <div id="reasonsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+    </div>
+</body>
+
+</html>
